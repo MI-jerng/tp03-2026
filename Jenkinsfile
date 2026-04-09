@@ -37,11 +37,13 @@ pipeline {
         }
 
         stage('Deploy') {
-           steps {
-                echo 'Deploying to 178.128.93.188/sav-moeng...'
-                // 'ssh-key-id' should be the ID of the SSH credential you created in Jenkins
-                sshagent(['SSH_CREDENTIAL_ID_HERE']) {
-                    sh 'ansible-playbook -i inventory.ini deploy.yml'
+            steps {
+                echo 'Deploying to 178.128.93.188...'
+                withCredentials([usernamePassword(credentialsId: 'server-ssh-login', 
+                                 passwordVariable: 'SSH_PASS', 
+                                 usernameVariable: 'SSH_USER')]) {
+                    // Use 'sshpass' (usually pre-installed) or Ansible's built-in pass handling
+                    sh "ansible-playbook -i inventory.ini deploy.yml -e 'ansible_password=${SSH_PASS}'"
                 }
             }
         }
@@ -51,13 +53,13 @@ pipeline {
             script {
                 def status = currentBuild.currentResult
                 def icon = (status == 'SUCCESS') ? '✅' : '❌'
+                def message = "${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
                 
-                sh """
-                    sudo apt-get update && sudo apt-get install -y curl
-                    curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
-                    -d chat_id=${TELEGRAM_ID} \
-                    -d text="${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
-                """
+                // This replaces 'curl' and works even if the agent is empty
+                def url = "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_ID}&text=${java.net.URLEncoder.encode(message, 'UTF-8')}"
+                
+                echo "Sending Telegram notification..."
+                url.toURL().getText() 
             }
         }
     }
