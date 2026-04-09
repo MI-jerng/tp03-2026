@@ -4,7 +4,7 @@ pipeline {
     }
 
     tools {
-        git 'default'
+        git 'Default'
     }
 
     stages {
