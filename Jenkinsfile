@@ -49,10 +49,10 @@ pipeline {
                 def status = currentBuild.currentResult
                 def icon = (status == 'SUCCESS') ? '✅' : '❌'
                 
-                // Using single quotes (') around the command prevents Groovy interpolation warnings
-                sh 'curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage ' +
-                   '-d chat_id=${TELEGRAM_ID} ' +
-                   '-d text="' + icon + ' Build ' + status + ': ' + env.JOB_NAME + ' [' + env.BUILD_NUMBER + ']"'
+                // Changed 'curl' to '/usr/bin/curl' for maximum reliability
+                sh "/usr/bin/curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage " +
+                   "-d chat_id=${TELEGRAM_ID} " +
+                   "-d text='${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
             }
         }
     }
