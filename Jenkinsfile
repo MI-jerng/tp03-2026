@@ -53,10 +53,11 @@ pipeline {
             script {
                 def status = currentBuild.currentResult
                 def icon = (status == 'SUCCESS') ? '✅' : '❌'
-                def message = "${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+                def msg = "${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
                 
-                // We use wget because it is likely already on the system
-                sh "wget --quiet --post-data='' \"https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_ID}&text=${message}\" -O /dev/null"
+                // We use a Python one-liner because Python is almost always 
+                // present on Ansible/Laravel agents even if wget is missing.
+                sh "python3 -c \"import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_ID}&text=${msg}')\" || echo 'Python notification failed'"
             }
         }
     }
