@@ -1,12 +1,14 @@
 pipeline {
     agent {
         label 'laravel'
-        tools {
-            git 'git'
-        }
-    } 
+    }
+
+    tools {
+        git 'git'
+    }
+
     stages {
-        stage('Build') { 
+        stage('Build') {
             steps {
                 echo 'Building...'
                 checkout scm
@@ -15,10 +17,6 @@ pipeline {
                 sh 'cp .env.example .env'
 
                 echo 'Configuring database...'
-                // sh 'sed -i "s/DB_HOST=.*/DB_HOST=localhost/" .env'
-                // sh 'sed -i "s/DB_PORT=.*/DB_PORT=3306/" .env'
-                // sh 'sed -i "s/DB_DATABASE=.*/DB_DATABASE=laravel/" .env'
-                // sh 'sed -i "s/DB_USERNAME=.*/DB_USERNAME=root/" .env'
 
                 echo 'Initializing dependencies...'
                 sh 'composer install'
@@ -28,18 +26,19 @@ pipeline {
                 sh 'php artisan key:generate'
             }
         }
-        stage('Test') { 
+
+        stage('Test') {
             steps {
                 echo 'Testing...'
                 sh 'php artisan test'
             }
         }
-        stage('Deploy') { 
+
+        stage('Deploy') {
             steps {
                 echo 'Deploying...'
                 sh 'ansible-playbook -i inventory.ini deploy.yml'
             }
         }
     }
-
 }
