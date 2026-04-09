@@ -37,9 +37,12 @@ pipeline {
         }
 
         stage('Deploy') {
-            steps {
+           steps {
                 echo 'Deploying to 178.128.93.188/sav-moeng...'
-                sh 'ansible-playbook -i inventory.ini deploy.yml'
+                // 'ssh-key-id' should be the ID of the SSH credential you created in Jenkins
+                sshagent(['SSH_CREDENTIAL_ID_HERE']) {
+                    sh 'ansible-playbook -i inventory.ini deploy.yml'
+                }
             }
         }
     }
@@ -49,9 +52,8 @@ pipeline {
                 def status = currentBuild.currentResult
                 def icon = (status == 'SUCCESS') ? '✅' : '❌'
                 
-                // We use 'env.PATH' to ensure the shell knows where to look
                 sh """
-                    export PATH=\$PATH:/usr/bin:/usr/local/bin
+                    sudo apt-get update && sudo apt-get install -y curl
                     curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
                     -d chat_id=${TELEGRAM_ID} \
                     -d text="${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
