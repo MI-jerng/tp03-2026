@@ -1,6 +1,9 @@
 pipeline {
     agent {
         label 'laravel'
+        tools {
+            git 'git'
+        }
     } 
     stages {
         stage('Build') { 
