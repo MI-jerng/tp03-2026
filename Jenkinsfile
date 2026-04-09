@@ -2,20 +2,14 @@ pipeline {
     agent { label 'LaravelAgent' }
 
     stages {
-        stage('Build') {
+        stage('Build & Test') {
             steps {
-                echo 'Building...'
+                echo 'Building and Testing...'
                 checkout scm
                 sh 'cp .env.example .env'
                 sh 'composer install'
                 sh 'npm install'
                 sh 'php artisan key:generate'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                echo 'Testing...'
                 sh 'php artisan test'
             }
         }
@@ -23,8 +17,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Deploying to server..."
-                // Wrapping specific stage in credentials lookup
-                withCredentials([string(credentialsId: 'SSH_PASS', variable: 'PASS')]) {
+                // Matching your ID: 'server-ssh-login'
+                withCredentials([string(credentialsId: 'server-ssh-login', variable: 'PASS')]) {
                     sh "ansible-playbook -i inventory.ini deploy.yml -e ansible_password=${PASS}"
                 }
             }
@@ -37,14 +31,16 @@ pipeline {
                 def status = currentBuild.currentResult
                 def message = "Build-${status}-Job-${env.JOB_NAME}-No-${env.BUILD_NUMBER}"
                 
-                // Use catchError so missing Telegram credentials don't fail the whole job report
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                // Matching your IDs: 'TELEGRAM_BOT_TOKEN' and 'TELEGRAM_CHAT_ID'
+                try {
                     withCredentials([
-                        string(credentialsId: 'TELEGRAM_TOKEN', variable: 'TOKEN'),
-                        string(credentialsId: 'TELEGRAM_ID', variable: 'CHAT_ID')
+                        string(credentialsId: 'TELEGRAM_BOT_TOKEN', variable: 'TOKEN'),
+                        string(credentialsId: 'TELEGRAM_CHAT_ID', variable: 'CHAT_ID')
                     ]) {
                         sh "python3 -c \"import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${message}')\""
                     }
+                } catch (e) {
+                    echo "Telegram notification failed: Ensure credentials match the code."
                 }
             }
         }
