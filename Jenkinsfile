@@ -36,7 +36,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'Deploying...'
+                echo 'Deploying to 178.128.93.188/sav-moeng...'
                 sh 'ansible-playbook -i inventory.ini deploy.yml'
             }
         }

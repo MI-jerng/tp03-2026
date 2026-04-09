@@ -1,0 +1,20 @@
+---
+- name: Deploy Laravel Project
+  hosts: webserver
+  vars:
+    student_name: "sav-moeng" 
+    app_path: "/var/www/{{ student_name }}"
+
+  tasks:
+    - name: Ensure the directory for my name exists
+      file:
+        path: "{{ app_path }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Sync files to my folder
+      synchronize:
+        src: "./"
+        dest: "{{ app_path }}"
