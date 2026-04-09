@@ -1,13 +1,14 @@
 ---
 - name: Deploy Laravel Project
   hosts: webserver
-  become: yes
+  # become: yes  <-- REMOVE THIS FROM HERE
   vars:
     student_name: "sav-moeng" 
     app_path: "/var/www/{{ student_name }}"
 
   tasks:
     - name: Ensure the app directory exists
+      become: yes # <-- ADD TO SPECIFIC TASK
       file:
         path: "{{ app_path }}"
         state: directory
@@ -16,10 +17,12 @@
         mode: '0755'
 
     - name: Archive project locally
+      # No 'become' here because Jenkins doesn't need root to zip its own files
       delegate_to: localhost
       shell: "tar --exclude=.git --exclude=node_modules --exclude=vendor -czf /tmp/project.tar.gz ."
 
     - name: Upload and extract the project
+      become: yes # <-- ADD TO SPECIFIC TASK
       unarchive:
         src: /tmp/project.tar.gz
         dest: "{{ app_path }}"
@@ -27,6 +30,7 @@
         group: www-data
 
     - name: Create symbolic link to fix 404 error
+      become: yes # <-- ADD TO SPECIFIC TASK
       file:
         src: "{{ app_path }}/public"
         dest: "/var/www/html/{{ student_name }}"
@@ -34,6 +38,7 @@
         force: yes
 
     - name: Set permissions for Laravel storage
+      become: yes # <-- ADD TO SPECIFIC TASK
       file:
         path: "{{ item }}"
         state: directory
@@ -46,6 +51,7 @@
         - "{{ app_path }}/bootstrap/cache"
 
     - name: Reload Nginx to apply changes
+      become: yes # <-- ADD TO SPECIFIC TASK
       service:
         name: nginx
         state: reloaded
