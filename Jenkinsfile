@@ -49,10 +49,13 @@ pipeline {
                 def status = currentBuild.currentResult
                 def icon = (status == 'SUCCESS') ? '✅' : '❌'
                 
-                // Changed 'curl' to '/usr/bin/curl' for maximum reliability
-                sh "/usr/bin/curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage " +
-                   "-d chat_id=${TELEGRAM_ID} " +
-                   "-d text='${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+                // We use 'env.PATH' to ensure the shell knows where to look
+                sh """
+                    export PATH=\$PATH:/usr/bin:/usr/local/bin
+                    curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+                    -d chat_id=${TELEGRAM_ID} \
+                    -d text="${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+                """
             }
         }
     }
