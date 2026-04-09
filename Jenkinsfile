@@ -17,8 +17,8 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Deploying to server..."
-                // Matching your ID: 'server-ssh-login'
-                withCredentials([string(credentialsId: 'server-ssh-login', variable: 'PASS')]) {
+                // Use usernamePassword instead of string
+                withCredentials([usernamePassword(credentialsId: 'server-ssh-login', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh "ansible-playbook -i inventory.ini deploy.yml -e ansible_password=${PASS}"
                 }
             }
