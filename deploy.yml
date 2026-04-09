@@ -1,12 +1,13 @@
 ---
 - name: Deploy Laravel Project
   hosts: webserver
+  become: yes
   vars:
     student_name: "sav-moeng" 
     app_path: "/var/www/{{ student_name }}"
 
   tasks:
-    - name: Ensure the directory exists
+    - name: Ensure the app directory exists
       file:
         path: "{{ app_path }}"
         state: directory
@@ -16,7 +17,6 @@
 
     - name: Archive project locally
       delegate_to: localhost
-      # Strict order: options -> file -> source
       shell: "tar --exclude=.git --exclude=node_modules --exclude=vendor -czf /tmp/project.tar.gz ."
 
     - name: Upload and extract the project
@@ -25,3 +25,27 @@
         dest: "{{ app_path }}"
         owner: www-data
         group: www-data
+
+    - name: Create symbolic link to fix 404 error
+      file:
+        src: "{{ app_path }}/public"
+        dest: "/var/www/html/{{ student_name }}"
+        state: link
+        force: yes
+
+    - name: Set permissions for Laravel storage
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0775'
+        owner: www-data
+        group: www-data
+        recurse: yes
+      with_items:
+        - "{{ app_path }}/storage"
+        - "{{ app_path }}/bootstrap/cache"
+
+    - name: Reload Nginx to apply changes
+      service:
+        name: nginx
+        state: reloaded
