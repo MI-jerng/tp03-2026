@@ -2,8 +2,7 @@ pipeline {
     agent { label 'LaravelAgent' }
 
     environment {
-        TELEGRAM_TOKEN = credentials('TELEGRAM_TOKEN')
-        TELEGRAM_ID = credentials('TELEGRAM_ID')
+        // These are available during the stages
         SSH_PASS = credentials('SSH_PASS')
     }
 
@@ -40,12 +39,17 @@ pipeline {
         always {
             script {
                 def status = currentBuild.currentResult
-                // Keeping the message simple to avoid URL encoding errors in Python
-                def message = "Build-${status}-Job-${env.JOB_NAME}-Number-${env.BUILD_NUMBER}"
+                def message = "Build-${status}-Job-${env.JOB_NAME}-No-${env.BUILD_NUMBER}"
                 
-                sh """
-                    python3 -c "import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_ID}&text=${message}')" || echo 'Notification failed'
-                """
+                // Wrap in withCredentials so the variables exist in this block
+                withCredentials([
+                    string(credentialsId: 'TELEGRAM_TOKEN', variable: 'TOKEN'),
+                    string(credentialsId: 'TELEGRAM_ID', variable: 'CHAT_ID')
+                ]) {
+                    sh """
+                        python3 -c "import urllib.request; urllib.request.urlopen('https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${message}')" || echo 'Notification failed'
+                    """
+                }
             }
         }
     }
