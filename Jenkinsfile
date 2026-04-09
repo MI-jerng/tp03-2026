@@ -55,11 +55,8 @@ pipeline {
                 def icon = (status == 'SUCCESS') ? '✅' : '❌'
                 def message = "${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
                 
-                // This replaces 'curl' and works even if the agent is empty
-                def url = "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_ID}&text=${java.net.URLEncoder.encode(message, 'UTF-8')}"
-                
-                echo "Sending Telegram notification..."
-                url.toURL().getText() 
+                // We use wget because it is likely already on the system
+                sh "wget --quiet --post-data='' \"https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage?chat_id=${TELEGRAM_ID}&text=${message}\" -O /dev/null"
             }
         }
     }
