@@ -6,17 +6,20 @@
     app_path: "/var/www/{{ student_name }}"
 
   tasks:
-    - name: Ensure the directory exists
+    - name: Ensure the directory for my name exists
       file:
         path: "{{ app_path }}"
         state: directory
+        owner: www-data
+        group: www-data
         mode: '0755'
 
     - name: Archive project locally
       delegate_to: localhost
-      shell: tar -czf /tmp/project.tar.gz . --exclude=.git --exclude=node_modules --exclude=vendor
+      # Excludes must come BEFORE the file name and source path
+      shell: "tar --exclude=.git --exclude=node_modules --exclude=vendor -czf /tmp/project.tar.gz ."
 
-    - name: Upload and Extract
+    - name: Upload and extract the project
       unarchive:
         src: /tmp/project.tar.gz
         dest: "{{ app_path }}"
