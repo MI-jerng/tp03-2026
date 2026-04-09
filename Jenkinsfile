@@ -3,8 +3,10 @@ pipeline {
         label 'laravel'
     }
 
-    tools {
-        git 'Default'
+    environment {
+        // This links the Jenkins Credential ID to a script variable
+        TELEGRAM_TOKEN = credentials('TELEGRAM_BOT_TOKEN')
+        TELEGRAM_ID    = credentials('TELEGRAM_CHAT_ID')
     }
 
     stages {
@@ -38,6 +40,21 @@ pipeline {
             steps {
                 echo 'Deploying to 178.128.93.188/sav-moeng...'
                 sh 'ansible-playbook -i inventory.ini deploy.yml'
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                // If success, send happy message. If failure, send alert.
+                def status = currentBuild.currentResult
+                def icon = (status == 'SUCCESS') ? '✅' : '❌'
+                
+                sh """
+                    curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+                    -d chat_id=${TELEGRAM_ID} \
+                    -d text='${icon} Build ${status}: ${env.JOB_NAME} [${env.BUILD_NUMBER}]'
+                """
             }
         }
     }
